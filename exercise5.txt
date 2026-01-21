@@ -1,0 +1,30 @@
+Exercise 5: Advanced Workflow
+
+1. Initialize a repository with multiple files
+answer:
+mkdir advanced-workflow
+cd advanced-workflow
+git init
+git add .
+git commit -m "Initial commit: Add multiple files"
+
+2. Create a .gitignore file
+answer:
+git add .gitignore
+git commit -m "Add .gitignore"
+
+3. Use git stash to save work in progress
+answer:
+git stash push -m "WIP on file1"
+
+4. Create and tag a release
+answer:
+git tag v1.0.0 -m "Release v1.0.0"
+git log --oneline -5
+
+5. Push everything to GitHub including tags
+answer:
+git remote add origin https://github.com/25sahilvarshney/advanced-workflow.git
+git branch -M main
+git push -u origin main
+git push origin --tags
