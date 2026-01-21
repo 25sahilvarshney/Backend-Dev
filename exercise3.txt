@@ -1,0 +1,34 @@
+Exercise 3: Conflict Resolution
+
+1. Create two branches from main
+answer:
+git checkout -b branch1
+git checkout main
+git checkout -b branch2
+
+2. Modify the same line in a file in both branches
+answer:
+echo "Line to conflict: Version A" >> README.md
+git add README.md
+git commit -m "branch1: Modify README.md to Version A"
+git checkout main
+git checkout branch2
+
+echo "Line to conflict: Version B" >> README.md
+git add README.md
+git commit -m "branch2: Modify README.md to Version B"
+
+3. Merge one branch into main
+answer:
+git checkout main
+git merge branch1
+
+4. Attempt to merge the second branch
+answer:
+git merge branch2
+
+5. Resolve the conflict manually
+answer:
+echo "Line to conflict: Resolved Version" >> README.md
+git add README.md
+git commit -m "Resolve merge conflict in README.md"
