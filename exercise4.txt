@@ -1,0 +1,26 @@
+Exercise 4: GitHub Collaboration
+
+1. Fork a sample repository on GitHub
+answer:
+git clone https://github.com/25sahilvarshney/Hello-World.git
+cd github-collab
+
+2. Clone it to your local machine
+answer: 
+git clone https://github.com/25sahilvarshney/Hello-World.git
+
+3. Create a new branch
+answer:
+git checkout -b my-feature
+
+4. Make changes and push to your fork
+answer:
+echo "My contribution" >> README.md
+git add README.md
+git commit -m "Add my contribution"
+git push -u origin my-feature
+
+5. Create a pull request to the original repository
+answer:
+git checkout main
+git branch -d my-feature
