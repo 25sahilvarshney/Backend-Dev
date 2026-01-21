@@ -1,0 +1,23 @@
+Exercise 2: Branching and Merging
+
+1. Create a new branch called “feature”
+answer: git checkout -b feature
+
+2. Add new files in the feature branch
+answer:  
+echo "Content for feature branch" > feature-file.txt
+git add feature-file.txt
+git commit -m "Add feature-file.txt on feature branch"
+
+3. Switch back to main branch
+answer:
+git checkout main
+
+4. Merge feature branch into main
+answer:
+git merge feature
+
+5. Delete the feature branch
+answer:
+git branch -d feature
+
