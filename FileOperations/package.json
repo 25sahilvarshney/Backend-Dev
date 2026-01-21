@@ -1,0 +1,21 @@
+{
+  "name": "package.json",
+  "version": "1.0.0",
+  "description": "all file operations",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "start": "npm run dev",
+    "test": "dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/25sahilvarshney/Backend-Dev.git"
+  },
+  "author": "Sahil Varshney",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/25sahilvarshney/Backend-Dev/issues"
+  },
+  "homepage": "https://github.com/25sahilvarshney/Backend-Dev#readme"
+}
