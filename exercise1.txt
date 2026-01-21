@@ -1,0 +1,25 @@
+Exercise 1: Basic Git Workflow
+1. Create a new directory and initialize Git
+answer:
+mkdir git-exercise
+cd git-exercise
+git init
+
+2. Create a README.md file
+answer:
+echo "# Basic Git Workflow Exercise" > README.md
+
+3. Add and commit the file
+answer:
+git add README.md
+git commit -m "Initial commit: Add README.md"
+
+4. Make changes and commit again
+answer:
+echo "## Updated content" >> README.md
+git add README.md
+git commit -m "Update: Add more content to README.md"
+
+5. View commit history
+answer:
+git log --oneline
