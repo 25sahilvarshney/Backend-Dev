@@ -11,7 +11,11 @@ function reverseString(str) {
   }
   return str.split('').reverse().join('');
 }
+<<<<<<< HEAD
  
+=======
+
+>>>>>>> 90151cb9484267b46288d9b75baccc08d00acc74
 function countVowels(str) {
   if (typeof str !== 'string') {
     return 0;
@@ -27,9 +31,10 @@ function countVowels(str) {
   
   return count;
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 90151cb9484267b46288d9b75baccc08d00acc74
 module.exports = {
-  capitalize,
-  reverseString,
-  countVowels
+  capitalize, reverseString,countVowels
 };
