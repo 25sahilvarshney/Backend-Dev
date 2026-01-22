@@ -27,10 +27,6 @@ function countVowels(str) {
   
   return count;
 }
-
-// Export all functions
 module.exports = {
-  capitalize,
-  reverseString,
-  countVowels
+  capitalize, reverseString,countVowels
 };
