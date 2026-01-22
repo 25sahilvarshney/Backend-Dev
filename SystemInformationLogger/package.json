@@ -1,0 +1,29 @@
+{
+  "name": "package.json",
+  "version": "1.0.0",
+  "description": "\"all new codes in this folder with new commits\"",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev":"node index.js",
+    "start":"npm run dev",
+    "test": "dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/25sahilvarshney/Backend-Dev.git"
+  },
+  "keywords": [
+    "os",
+    "modules",
+    "and",
+    "fs",
+    "modules"
+  ],
+  "author": "Sahil Varshney",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/25sahilvarshney/Backend-Dev/issues"
+  },
+  "homepage": "https://github.com/25sahilvarshney/Backend-Dev#readme"
+}
