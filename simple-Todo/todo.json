@@ -1,0 +1,53 @@
+[
+  {
+    "name": "prem",
+    "email": "prem@gmail.com",
+    "password": "1234",
+    "todo": [
+      {
+        "createTime": "2026-01-28T06:23:49.743Z",
+        "task": "buy groceries",
+        "status": false
+      },
+      {
+        "createTime": "2026-01-28T06:25:19.599Z",
+        "task": "buy groceries",
+        "status": false
+      }
+    ]
+  },
+  {
+    "name": "anurag",
+    "email": "anurag123@gmail.com",
+    "password": "875264",
+    "todo": [
+      {
+        "createTime": "2026-01-28T06:23:49.746Z",
+        "task": "do homework",
+        "status": true
+      },
+      {
+        "createTime": "2026-01-28T06:25:19.606Z",
+        "task": "do homework",
+        "status": true
+      }
+    ]
+  },
+  {
+    "name": "shivansh",
+    "email": "shivansh25@gmail.com",
+    "password": "12qwer34",
+    "todo": [
+      {
+        "createTime": "2026-01-28T06:23:49.750Z",
+        "task": "clean room",
+        "status": false
+      },
+      {
+        "createTime": "2026-01-28T06:25:19.608Z",
+        "task": "clean room",
+        "status": false
+      }
+    ]
+  }
+]
