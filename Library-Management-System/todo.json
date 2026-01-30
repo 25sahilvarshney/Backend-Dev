@@ -1,0 +1,17 @@
+[
+  {
+    "bookid": {
+      "booksid": "A091"
+    },
+    "title": {
+      "title": "java"
+    },
+    "price": {
+      "price": 500
+    },
+    "author": {
+      "author": "xyz"
+    },
+    "todo": []
+  }
+]

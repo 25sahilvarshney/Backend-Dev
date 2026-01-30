@@ -1,0 +1,32 @@
+{
+  "name": "library-list",
+  "version": "1.0.0",
+  "description": "\"books are available or not in the library \"",
+  "main": "app.js",
+  "type":"commonjs",
+  "scripts": {
+    "dev":"node app.js",
+    "start":"npm run dev",
+    "test": "dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/25sahilvarshney/Backend-Dev.git"
+  },
+  "keywords": [
+    "bookid",
+    "title",
+    "price",
+    "author",
+    "memberid",
+    "membership",
+    "name",
+    "borrowBooks"
+  ],
+  "author": "Sahil Varshney",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/25sahilvarshney/Backend-Dev/issues"
+  },
+  "homepage": "https://github.com/25sahilvarshney/Backend-Dev#readme"
+}
