@@ -42,3 +42,17 @@ console.log(deletedata1);
 console.log(deletedata2);
 console.log("the end.......................");
 
+const express=require("express");
+
+ let app=express();
+ let port= 8475;
+ app.listen(port,()=>{
+    app.get("/",(req,res)=>{
+        res.end("hi");
+    })
+    app.get("/registerUser",(req,res)=>{
+        console.log(req.body);
+        res.end("this is home page");
+    })
+    console.log("connect");
+ })
