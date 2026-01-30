@@ -1,2 +1,0 @@
-this is my first program in nodejs-programming 
-now i want to be a backend developer nowadays to become a popular senior software engineering to their update requirements
