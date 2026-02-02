@@ -1,5 +1,5 @@
 {
-  "name": "express-framework",
+  "name": "express-framework-2",
   "version": "1.0.0",
   "description": "framework",
   "main": "index.js",
@@ -21,5 +21,6 @@
   "homepage": "https://github.com/25sahilvarshney/Backend-Dev#readme",
   "dependencies": {
     "express": "^5.2.1"
-  }
+  },
+  "devDependencies": {}
 }
