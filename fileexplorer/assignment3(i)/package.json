@@ -1,0 +1,12 @@
+{
+  "name": "assignment3a",
+  "version": "1.0.0",
+  "description": "\"log file manager",
+  "license": "ISC",
+  "author": "sahil",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run dev"
+  }
+}
