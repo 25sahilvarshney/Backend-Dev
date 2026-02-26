@@ -1,0 +1,39 @@
+title{
+    color:greenyellow;
+}
+h1{
+    color:darkgrey;
+}
+table,th,tr{
+    color:rgb(25, 210, 216);
+    text-align:center;
+    border: 0.5px solid black;
+    width:50px;
+    height:30px;
+    border-collapse: collapse;
+}
+tr,td{
+    text-align:center;
+    color:rgb(70, 218, 83);
+}
+h1{
+    color:green;
+    display:flex;
+    margin:0px;
+    padding:0px;
+}
+button{
+    display:flex;
+    gap:5px;
+}
+select,option{
+    display:flex;
+    margin:1.5px;
+    padding:1px;
+    border-color:black;    
+}
+button-hover{
+    margin:0px;
+    padding:0px;
+    display:flex;
+}

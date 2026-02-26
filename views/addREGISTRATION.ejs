@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Employee</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<b>
+
+<h2>Employee Registration Form</h2>
+
+<input="/employee/add" method="POST">
+
+  <label>UserName</label>
+  <input type="text" name="username" required>
+  <br>
+  <br>
+  <label>Gender</label>
+  <input type="text" name="gender" required>
+    <input type="checkbox" id="MALE">Male</input>
+    <input type="checkbox" id="FEMALE">Female</input>
+  </b>
+  <br>
+  <br>
+  <label>Department</label>
+  <input type="text" name="department" required>
+    <input type="checkbox" id="HR">HR</input>
+    <input type="checkbox" id="FINANCE">FINANCE</input>
+    <input type="checkbox" id="SALES">SALES</input>
+    <input type="checkbox" id="ENGINEER">ENGINEER</input>
+    <input type="checkbox" id="OTHERS">OTHERS</input>  
+    <br>
+    <br>
+  <label>Salary</label>
+  <input type="number" name="salary" required>
+  <select name="SALARY" required>
+    <option value="10000">10000</option>
+    <option value="20000">20000</option>
+    <option value="30000">30000</option>
+    <option value="40000">40000</option>
+  </select>
+  <br>
+  <br>
+  <label>Start Date</label>
+  <input type="date" name="startDate" required>
+  <br>
+  <br>
+  <label>Notes</label>
+  <textarea name="notes"></textarea>
+  <br>
+  <br>
+  <button type="cancel">Cancel</button>
+  <button type="submit">Submit</button>
+  <button type="Reset">Reset</button>
+
+</form>
+
+<a href="/dashboard">Back to Dashboard</a>
+
+</body>
+</html>

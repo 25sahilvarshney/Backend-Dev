@@ -1,0 +1,39 @@
+{
+  "name": "payrollsystem",
+  "version": "1.0.0",
+  "description": "\"employees payroll system\"",
+  "keywords": [
+    "Dashboard",
+    "payroll_calculation",
+    "registration",
+    "architecture",
+    "Data_Persistence"
+  ],
+  "homepage": "https://github.com/25sahilvarshney/Backend-Dev#readme",
+  "bugs": {
+    "url": "https://github.com/25sahilvarshney/Backend-Dev/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/25sahilvarshney/Backend-Dev.git"
+  },
+  "license": "ISC",
+  "author": "sahil varshney",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "dev":"node server.js",
+    "start":"npm run dev",
+    "test": "dev"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "http-status-pro-js": "^1.0.2",
+    "jsonwebtoken": "^9.0.3",
+    "nodemon": "^3.1.11"
+  }
+}
