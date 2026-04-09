@@ -1,0 +1,20 @@
+{
+  "name": "mongodb_crud_operations",
+  "version": "1.0.0",
+  "description": "\"all crud operations\"",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev":"nodemon index.js",
+    "start":"node index.js",
+    "test": "dev"
+  },
+  "dependencies": {
+    "env": "^0.0.2",
+    "express": "^5.2.1",
+    "mongoose": "^9.4.1",
+    "nodemon": "^3.1.14"
+  }
+}
