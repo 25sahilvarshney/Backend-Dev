@@ -1,6 +1,5 @@
 const Student = require('../models/student');
 
-// ==================== UPDATE OPERATORS EXAMPLE ====================
 const updateOperatorsExample = async (studentId) => {
   try {
     await Student.findByIdAndUpdate(
@@ -60,7 +59,6 @@ const updateOperatorsExample = async (studentId) => {
   }
 };
 
-// ==================== UPDATE STUDENT BY EMAIL ====================
 const updateStudent = async (email, updates) => {
   try {
     const result = await Student.updateOne(
@@ -76,7 +74,7 @@ const updateStudent = async (email, updates) => {
   }
 };
 
-// ==================== UPDATE STUDENT BY ID ====================
+
 const updateStudentById = async (id, updates) => {
   try {
     const student = await Student.findByIdAndUpdate(
@@ -100,7 +98,6 @@ const updateStudentById = async (id, updates) => {
   }
 };
 
-// ==================== FIND ONE AND UPDATE ====================
 const findAndUpdateStudent = async () => {
   try {
     const student = await Student.findOneAndUpdate(
@@ -121,7 +118,6 @@ const findAndUpdateStudent = async () => {
   }
 };
 
-// ==================== UPDATE WITH SAVE METHOD ====================
 const updateWithSave = async (email) => {
   try {
     const student = await Student.findOne({ email });

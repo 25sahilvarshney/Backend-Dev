@@ -12,6 +12,13 @@ mongoose.connect('mongodb://localhost:27017/university')
   .then(() => console.log('MongoDB Connected'))
   .catch((err) => console.error('Connection Error:', err));
 
+
+app.get("/",(req,res)=>{
+  console.log("hello");
+  res.send("Hello, World!");
+
+})
+
 app.post('/createStudent', async (req, res) => {
   try {
     const studentData = req.body;
@@ -22,6 +29,19 @@ app.post('/createStudent', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+app.delete("/deleteStudent",async(req,res)=>{
+    try{
+        if(!email==email)
+            return null
+
+    }
+    catch(err){
+        console.error("Error for delete the invalid student");
+        res.status(404).json({"error":"student deleted successfully"});
+    }
+
+})
 
 app.put('/update-student/:id', async (req, res) => {
   try {
