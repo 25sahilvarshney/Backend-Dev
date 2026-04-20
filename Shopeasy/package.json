@@ -1,0 +1,43 @@
+{
+  "name": "shopeasy-security",
+  "version": "1.0.0",
+  "description": "Secure e-commerce platform with comprehensive security measures",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest",
+    "test:security": "jest tests/security.test.js",
+    "audit": "npm audit",
+    "security-check": "npx snyk test"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0",
+    "express-session": "^1.17.3",
+    "connect-mongodb-session": "^3.1.1",
+    "bcryptjs": "^2.4.3",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.10.0",
+    "express-mongo-sanitize": "^2.2.0",
+    "redis": "^5.12.1",
+    "rate-limit-redis": "^4.3.1",
+    "xss": "^1.0.14",
+    "validator": "^13.11.0",
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "csurf": "^1.11.0",
+    "compression": "^1.7.4"
+  },
+  "devDependencies": {
+    "jest": "^29.6.4",
+    "supertest": "^6.3.3",
+    "nodemon": "^3.0.1",
+    "snyk": "^1.1234.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["./src/tests/setup.js"]
+    
+  }
+}
