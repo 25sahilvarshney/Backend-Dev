@@ -2,13 +2,47 @@ const rateLimit = require('express-rate-limit');
 const RedisStore = require('rate-limit-redis');
 const redis = require('redis');
 
+const RATE_LIMIT_CONFIG = {
+  general: {
+    windowMs: 900000,
+    maxRequests: 100
+  },
+  strict: {
+    windowMs: 60000,
+    maxRequests: 30
+  },
+  login: {
+    windowMs: 15 * 60 * 1000,
+    maxRequests: 5
+  },
+  search: {
+    windowMs: 60000,
+    maxRequests: 30
+  },
+  review: {
+    windowMs: 60000,
+    maxRequests: 10
+  },
+  apiKey: {
+    windowMs: 60000,
+    maxRequests: 60
+  }
+};
+
+const REDIS_RECONNECT_MAX_RETRIES = 10;
+const REDIS_RECONNECT_MAX_DELAY = 3000;
+const ROLE_BASED_LIMITS = {
+  admin: 200,
+  user: 100,
+  guest: 50
+};
+
 class RateLimiterMiddleware {
   constructor() {
     this.redisClient = null;
     this.stores = {};
   }
-  
-  // Initialize Redis for distributed rate limiting
+
   async initializeRedis() {
     if (process.env.NODE_ENV === 'production' && !this.redisClient) {
       this.redisClient = redis.createClient({
@@ -16,65 +50,62 @@ class RateLimiterMiddleware {
         password: process.env.REDIS_PASSWORD,
         socket: {
           reconnectStrategy: (retries) => {
-            if (retries > 10) {
+            if (retries > REDIS_RECONNECT_MAX_RETRIES) {
               console.error('Redis connection failed after 10 retries');
               return new Error('Redis connection failed');
             }
-            return Math.min(retries * 100, 3000);
+            return Math.min(retries * 100, REDIS_RECONNECT_MAX_DELAY);
           }
         }
       });
-      
+
       this.redisClient.on('error', (err) => {
         console.error('Redis Client Error:', err);
       });
-      
+
       await this.redisClient.connect();
       console.log('Redis connected for rate limiting');
     }
     return this.redisClient;
   }
-  
-  // Get Redis store
+
   async getRedisStore() {
     if (!this.redisClient) {
       await this.initializeRedis();
     }
-    
+
     if (this.redisClient && !this.stores.redis) {
       this.stores.redis = new RedisStore({
         sendCommand: (...args) => this.redisClient.sendCommand(args),
         prefix: 'rl:'
       });
     }
-    
+
     return this.stores.redis;
   }
-  
-  // General API rate limiter
+
   async generalLimiter() {
     const store = await this.getRedisStore();
-    
+    const windowMs = parseInt(process.env.RATE_LIMIT_WINDOW_MS) || RATE_LIMIT_CONFIG.general.windowMs;
+    const maxRequests = parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || RATE_LIMIT_CONFIG.general.maxRequests;
+
     return rateLimit({
-      windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000,
-      max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+      windowMs: windowMs,
+      max: maxRequests,
       message: {
         error: 'Too many requests',
         message: 'Please try again later',
-        retryAfter: Math.ceil((parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000) / 1000)
+        retryAfter: Math.ceil(windowMs / 1000)
       },
       standardHeaders: true,
       legacyHeaders: false,
       store: store,
       keyGenerator: (req) => {
-        // Use user ID if authenticated, otherwise IP
         return req.session?.userId || req.ip;
       },
       skip: (req) => {
-        // Skip rate limiting for health checks
         if (req.path === '/health') return true;
-        
-        // Skip for trusted IPs
+
         const trustedIPs = process.env.TRUSTED_IPS?.split(',') || [];
         return trustedIPs.includes(req.ip);
       },
@@ -88,14 +119,13 @@ class RateLimiterMiddleware {
       }
     });
   }
-  
-  // Strict rate limiter for sensitive operations
+
   async strictLimiter() {
     const store = await this.getRedisStore();
-    
+
     return rateLimit({
-      windowMs: 60 * 1000, // 1 minute
-      max: 30, // 30 requests per minute
+      windowMs: RATE_LIMIT_CONFIG.strict.windowMs,
+      max: RATE_LIMIT_CONFIG.strict.maxRequests,
       message: {
         error: 'Rate limit exceeded',
         message: 'Too many requests. Please slow down.'
@@ -106,14 +136,13 @@ class RateLimiterMiddleware {
       keyGenerator: (req) => req.session?.userId || req.ip
     });
   }
-  
-  // Login rate limiter
+
   async loginLimiter() {
     const store = await this.getRedisStore();
-    
+
     return rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 5, // 5 attempts
+      windowMs: RATE_LIMIT_CONFIG.login.windowMs,
+      max: RATE_LIMIT_CONFIG.login.maxRequests,
       message: {
         error: 'Too many login attempts',
         message: 'Please try again after 15 minutes'
@@ -123,19 +152,17 @@ class RateLimiterMiddleware {
       store: store,
       skipSuccessfulRequests: true,
       keyGenerator: (req) => {
-        // Use email from body if available, otherwise IP
         return req.body?.email || req.ip;
       }
     });
   }
-  
-  // Search rate limiter
+
   async searchLimiter() {
     const store = await this.getRedisStore();
-    
+
     return rateLimit({
-      windowMs: 60 * 1000, // 1 minute
-      max: 30, // 30 searches per minute
+      windowMs: RATE_LIMIT_CONFIG.search.windowMs,
+      max: RATE_LIMIT_CONFIG.search.maxRequests,
       message: {
         error: 'Search limit exceeded',
         message: 'Please wait before searching again'
@@ -146,14 +173,13 @@ class RateLimiterMiddleware {
       keyGenerator: (req) => req.session?.userId || req.ip
     });
   }
-  
-  // Review submission limiter
+
   async reviewLimiter() {
     const store = await this.getRedisStore();
-    
+
     return rateLimit({
-      windowMs: 60 * 1000, // 1 minute
-      max: 10, // 10 reviews per minute
+      windowMs: RATE_LIMIT_CONFIG.review.windowMs,
+      max: RATE_LIMIT_CONFIG.review.maxRequests,
       message: {
         error: 'Review limit exceeded',
         message: 'Please wait before submitting more reviews'
@@ -164,14 +190,13 @@ class RateLimiterMiddleware {
       keyGenerator: (req) => req.session?.userId
     });
   }
-  
-  // API key rate limiter (for third-party integrations)
+
   async apiKeyLimiter() {
     const store = await this.getRedisStore();
-    
+
     return rateLimit({
-      windowMs: 60 * 1000, // 1 minute
-      max: 60, // 60 requests per minute
+      windowMs: RATE_LIMIT_CONFIG.apiKey.windowMs,
+      max: RATE_LIMIT_CONFIG.apiKey.maxRequests,
       message: {
         error: 'API rate limit exceeded',
         message: 'Please upgrade your plan for higher limits'
@@ -182,19 +207,17 @@ class RateLimiterMiddleware {
       keyGenerator: (req) => req.headers['x-api-key'] || req.ip
     });
   }
-  
-  // Dynamic rate limiter based on user role
+
   async roleBasedLimiter() {
     const store = await this.getRedisStore();
-    
+
     return rateLimit({
-      windowMs: 60 * 1000,
+      windowMs: RATE_LIMIT_CONFIG.strict.windowMs,
       max: (req) => {
-        // Higher limits for authenticated users, lower for guests
         if (req.session?.userId) {
-          return req.session?.role === 'admin' ? 200 : 100;
+          return req.session?.role === 'admin' ? ROLE_BASED_LIMITS.admin : ROLE_BASED_LIMITS.user;
         }
-        return 50;
+        return ROLE_BASED_LIMITS.guest;
       },
       message: {
         error: 'Rate limit exceeded'
@@ -205,8 +228,7 @@ class RateLimiterMiddleware {
       keyGenerator: (req) => req.session?.userId || req.ip
     });
   }
-  
-  // Cleanup on app shutdown
+
   async cleanup() {
     if (this.redisClient) {
       await this.redisClient.quit();

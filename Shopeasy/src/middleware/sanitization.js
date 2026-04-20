@@ -1,43 +1,41 @@
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss');
 
+const SAFE_HTML_TAGS = {
+  b: [],
+  i: [],
+  em: [],
+  strong: [],
+  a: ['href', 'title', 'target'],
+  p: [],
+  br: [],
+  ul: [],
+  ol: [],
+  li: []
+};
+
+const DANGEROUS_TAG_BODIES = ['script', 'style', 'iframe', 'object', 'embed'];
+
 class SanitizationMiddleware {
-  // MongoDB injection protection
   static preventNoSQLInjection() {
     return mongoSanitize({
-      replaceWith: '_', // Replace dangerous operators with underscore
+      replaceWith: '_',
       onSanitize: ({ req, key }) => {
         console.warn(`Attempted injection detected on field: ${key}`);
       }
     });
   }
 
-  // XSS protection for user input
   static sanitizeXSS(data) {
     if (typeof data === 'string') {
-      // Custom XSS filter with additional rules
       return xss(data, {
-        whiteList: {
-          // Allow only safe HTML tags
-          b: [],
-          i: [],
-          em: [],
-          strong: [],
-          a: ['href', 'title', 'target'],
-          p: [],
-          br: [],
-          ul: [],
-          ol: [],
-          li: []
-        },
+        whiteList: SAFE_HTML_TAGS,
         stripIgnoreTag: true,
-        stripIgnoreTagBody: ['script', 'style', 'iframe', 'object', 'embed'],
+        stripIgnoreTagBody: DANGEROUS_TAG_BODIES,
         onTagAttr: (tag, name, value) => {
-          // Block javascript: URLs
           if (name === 'href' && value.toLowerCase().startsWith('javascript:')) {
             return '';
           }
-          // Block on* event handlers
           if (name.startsWith('on')) {
             return '';
           }
@@ -53,7 +51,6 @@ class SanitizationMiddleware {
     return data;
   }
 
-  // Middleware for request body sanitization
   static sanitizeRequestBody(req, res, next) {
     if (req.body) {
       req.body = this.sanitizeXSS(req.body);
@@ -61,7 +58,6 @@ class SanitizationMiddleware {
     next();
   }
 
-  // Middleware for query parameters sanitization
   static sanitizeQueryParams(req, res, next) {
     if (req.query) {
       req.query = this.sanitizeXSS(req.query);
@@ -69,26 +65,21 @@ class SanitizationMiddleware {
     next();
   }
 
-  // Email sanitization
   static sanitizeEmail(email) {
     if (!email) return email;
     return email.toLowerCase().trim();
   }
 
-  // Remove control characters
   static removeControlCharacters(str) {
     if (typeof str !== 'string') return str;
     return str.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
   }
 
-  // Sanitize product search input
   static sanitizeSearchQuery(query) {
     if (!query) return '';
-    
-    // Remove special regex characters
+
     const sanitized = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    
-    // Limit length
+
     return sanitized.slice(0, 100);
   }
 }

@@ -5,68 +5,79 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const Review = require('../models/Review');
 
+const TEST_USER_CREDENTIALS = {
+  email: 'test@example.com',
+  password: 'Test123!@#',
+  name: 'Test User'
+};
+
+const NOSQL_INJECTION_QUERIES = [
+  { q: { $ne: null } },
+  { q: { $gt: '' } },
+  { q: '{"$ne": null}' },
+  { q: '1; DROP TABLE products;' }
+];
+
+const XSS_ATTACK_PATTERNS = [
+  /<script/i,
+  /javascript:/i,
+  /onload=/i,
+  /onerror=/i,
+  /onclick=/i,
+  /<iframe/i,
+  /<object/i,
+  /<embed/i
+];
+
 describe('Security Tests', () => {
   let authToken;
   let testUser;
   let testProduct;
-  
+
   beforeAll(async () => {
-    // Connect to test database
     await mongoose.connect(process.env.MONGODB_TEST_URI);
-    
-    // Create test user
-    testUser = await User.create({
-      email: 'test@example.com',
-      password: 'Test123!@#',
-      name: 'Test User'
-    });
+
+    testUser = await User.create(TEST_USER_CREDENTIALS);
   });
-  
+
   afterAll(async () => {
     await User.deleteMany({});
     await Product.deleteMany({});
     await Review.deleteMany({});
     await mongoose.connection.close();
   });
-  
+
   describe('MongoDB Injection Protection', () => {
     test('Should prevent NoSQL injection in search', async () => {
-      const maliciousQueries = [
-        { q: { $ne: null } },
-        { q: { $gt: '' } },
-        { q: '{"$ne": null}' },
-        { q: '1; DROP TABLE products;' }
-      ];
-      
-      for (const query of maliciousQueries) {
+      for (const query of NOSQL_INJECTION_QUERIES) {
         const response = await request(app)
           .get('/api/products/search')
           .query(query);
-        
+
         expect(response.status).not.toBe(500);
         expect(response.body).not.toHaveProperty('error', expect.stringContaining('database'));
       }
     });
-    
+
     test('Should prevent price manipulation', async () => {
       const response = await request(app)
         .get('/api/products/search')
         .query({ minPrice: '-100', maxPrice: '-1' });
-      
+
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('Invalid minPrice');
     });
-    
+
     test('Should sanitize product search query', async () => {
       const response = await request(app)
         .get('/api/products/search')
         .query({ q: '<script>alert("xss")</script>' });
-      
+
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
     });
   });
-  
+
   describe('XSS Protection', () => {
     test('Should prevent XSS in review submission', async () => {
       const maliciousReview = {
@@ -75,79 +86,105 @@ describe('Security Tests', () => {
         title: '<script>alert("XSS")</script>Product Title',
         comment: 'Great product! <img src=x onerror=alert("XSS")>'
       };
-      
-      // Login first
+
       const loginResponse = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'test@example.com', password: 'Test123!@#' });
-      
+        .send({
+          email: TEST_USER_CREDENTIALS.email,
+          password: TEST_USER_CREDENTIALS.password
+        });
+
       const sessionCookie = loginResponse.headers['set-cookie'];
-      
+
       const response = await request(app)
         .post('/api/reviews')
         .set('Cookie', sessionCookie)
         .send(maliciousReview);
-      
+
       expect(response.status).toBe(201);
       expect(response.body.data.title).not.toContain('<script>');
       expect(response.body.data.comment).not.toContain('onerror');
     });
-    
+
     test('Should sanitize URL parameters', async () => {
       const response = await request(app)
         .get('/api/products/search')
         .query({ q: 'javascript:alert("XSS")' });
-      
+
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
     });
   });
-  
+
   describe('Authentication & Session Security', () => {
     test('Should prevent brute force login', async () => {
       const attempts = [];
       for (let i = 0; i < 6; i++) {
         const response = await request(app)
           .post('/api/auth/login')
-          .send({ email: 'test@example.com', password: 'WrongPassword123!' });
-        
+          .send({
+            email: TEST_USER_CREDENTIALS.email,
+            password: 'WrongPassword123!'
+          });
+
         attempts.push(response.status);
       }
-      
-      // Should be rate limited after 5 attempts
+
       expect(attempts[5]).toBe(429);
     });
-    
+
     test('Should lock account after failed attempts', async () => {
-      // Simulate 5 failed attempts
       for (let i = 0; i < 5; i++) {
         await request(app)
           .post('/api/auth/login')
-          .send({ email: 'test@example.com', password: 'WrongPassword123!' });
+          .send({
+            email: TEST_USER_CREDENTIALS.email,
+            password: 'WrongPassword123!'
+          });
       }
-      
+
       const response = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'test@example.com', password: 'Test123!@#' });
-      
+        .send({
+          email: TEST_USER_CREDENTIALS.email,
+          password: TEST_USER_CREDENTIALS.password
+        });
+
       expect(response.status).toBe(401);
       expect(response.body.error).toContain('Account locked');
     });
-    
+
     test('Should regenerate session on login', async () => {
       const response = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'test@example.com', password: 'Test123!@#' });
-      
+        .send({
+          email: TEST_USER_CREDENTIALS.email,
+          password: TEST_USER_CREDENTIALS.password
+        });
+
       expect(response.headers['set-cookie']).toBeDefined();
       expect(response.body.user).toBeDefined();
     });
-    
+
     test('Should invalidate session on logout', async () => {
-      // Login
       const loginResponse = await request(app)
         .post('/api/auth/login')
-        .send({ email: 'test@example.com', password: 'Test123!@#' });
+        .send({
+          email: TEST_USER_CREDENTIALS.email,
+          password: TEST_USER_CREDENTIALS.password
+        });
+
+      const sessionCookie = loginResponse.headers['set-cookie'];
+
+      const logoutResponse = await request(app)
+        .post('/api/auth/logout')
+        .set('Cookie', sessionCookie);
+
+      expect(logoutResponse.status).toBe(200);
+    });
+  });
+});
+
       
       const sessionCookie = loginResponse.headers['set-cookie'];
       

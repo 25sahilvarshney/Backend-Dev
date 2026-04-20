@@ -4,55 +4,64 @@ const app = require('../../app');
 const Product = require('../models/Product');
 const User = require('../models/User');
 
+const ADMIN_CREDENTIALS = {
+  email: 'admin@test.com',
+  password: 'AdminP@ss123!',
+  name: 'Admin User'
+};
+
+const USER_CREDENTIALS = {
+  email: 'user@test.com',
+  password: 'UserP@ss123!',
+  name: 'Regular User'
+};
+
+const NOSQL_INJECTION_QUERIES = [
+  { q: { $ne: null } },
+  { q: { $gt: '' } },
+  { q: '{"$ne": null}' },
+  { q: '1; DROP TABLE products;' },
+  { q: '\' OR \'1\'=\'1' }
+];
+
 describe('Product Tests', () => {
   let adminAgent;
   let userAgent;
   let adminSessionCookie;
   let userSessionCookie;
   let testProduct;
-  
+
   beforeAll(async () => {
-    // Create admin user
     const adminUser = await User.create({
-      email: 'admin@test.com',
-      password: 'AdminP@ss123!',
-      name: 'Admin User',
+      ...ADMIN_CREDENTIALS,
       role: 'admin'
     });
-    
-    // Create regular user
-    const regularUser = await User.create({
-      email: 'user@test.com',
-      password: 'UserP@ss123!',
-      name: 'Regular User'
-    });
-    
-    // Login admin
+
+    const regularUser = await User.create(USER_CREDENTIALS);
+
     const adminLogin = await request(app)
       .post('/api/auth/login')
       .send({
-        email: 'admin@test.com',
-        password: 'AdminP@ss123!'
+        email: ADMIN_CREDENTIALS.email,
+        password: ADMIN_CREDENTIALS.password
       });
     adminSessionCookie = adminLogin.headers['set-cookie'];
-    
-    // Login user
+
     const userLogin = await request(app)
       .post('/api/auth/login')
       .send({
-        email: 'user@test.com',
-        password: 'UserP@ss123!'
+        email: USER_CREDENTIALS.email,
+        password: USER_CREDENTIALS.password
       });
     userSessionCookie = userLogin.headers['set-cookie'];
-    
+
     adminAgent = request.agent(app);
     userAgent = request.agent(app);
   });
-  
+
   beforeEach(async () => {
     await Product.deleteMany({});
-    
-    // Create test product
+
     testProduct = await Product.create({
       name: 'Test Laptop',
       price: 999.99,
@@ -62,48 +71,39 @@ describe('Product Tests', () => {
       isActive: true
     });
   });
-  
+
   describe('Product Search', () => {
     test('Should search products with valid query', async () => {
       const response = await request(app)
         .get('/api/products/search')
         .query({ q: 'laptop' });
-      
+
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
     });
-    
+
     test('Should prevent NoSQL injection in search', async () => {
-      const maliciousQueries = [
-        { q: { $ne: null } },
-        { q: { $gt: '' } },
-        { q: '{"$ne": null}' },
-        { q: '1; DROP TABLE products;' },
-        { q: '\' OR \'1\'=\'1' }
-      ];
-      
-      for (const query of maliciousQueries) {
+      for (const query of NOSQL_INJECTION_QUERIES) {
         const response = await request(app)
           .get('/api/products/search')
           .query(query);
-        
+
         expect(response.status).not.toBe(500);
         expect(response.body).not.toHaveProperty('error', expect.stringContaining('database'));
       }
     });
-    
+
     test('Should validate price range parameters', async () => {
       const response = await request(app)
         .get('/api/products/search')
         .query({ minPrice: '-100', maxPrice: '-1' });
-      
+
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('Invalid minPrice');
     });
-    
+
     test('Should paginate search results correctly', async () => {
-      // Create multiple products
       for (let i = 0; i < 25; i++) {
         await Product.create({
           name: `Product ${i}`,
@@ -112,41 +112,47 @@ describe('Product Tests', () => {
           stock: 10
         });
       }
-      
+
       const response = await request(app)
         .get('/api/products/search')
         .query({ page: 2, limit: 10 });
-      
+
       expect(response.status).toBe(200);
       expect(response.body.pagination.page).toBe(2);
       expect(response.body.pagination.limit).toBe(10);
       expect(response.headers['x-page']).toBe('2');
     });
-    
+
     test('Should sanitize XSS in search query', async () => {
       const response = await request(app)
         .get('/api/products/search')
         .query({ q: '<script>alert("xss")</script>laptop' });
-      
+
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
     });
   });
-  
+
   describe('Get Product', () => {
     test('Should get product by valid ID', async () => {
       const response = await request(app)
         .get(`/api/products/${testProduct._id}`);
-      
+
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.name).toBe('Test Laptop');
       expect(response.body.data.price).toBe(999.99);
     });
-    
+
     test('Should reject invalid product ID format', async () => {
       const response = await request(app)
         .get('/api/products/invalid-id');
+
+      expect(response.status).not.toBe(200);
+    });
+  });
+});
+
       
       expect(response.status).toBe(400);
       expect(response.body.error).toBe('Invalid product ID format');

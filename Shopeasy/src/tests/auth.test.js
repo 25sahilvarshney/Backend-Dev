@@ -3,106 +3,109 @@ const mongoose = require('mongoose');
 const app = require('../../app');
 const User = require('../models/User');
 
+const STRONG_PASSWORD = 'StrongP@ssw0rd123!';
+const WEAK_PASSWORD = 'weak';
+const INVALID_EMAIL = 'invalid-email';
+
 describe('Authentication Tests', () => {
   let agent;
   let testUser;
-  
+
   beforeEach(async () => {
     agent = request.agent(app);
     await User.deleteMany({});
   });
-  
+
   describe('User Registration', () => {
     test('Should register a new user with valid data', async () => {
       const userData = {
         email: 'newuser@example.com',
-        password: 'StrongP@ssw0rd123!',
+        password: STRONG_PASSWORD,
         name: 'New User'
       };
-      
+
       const response = await agent
         .post('/api/auth/register')
         .send(userData);
-      
+
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.user.email).toBe(userData.email);
       expect(response.body.user.password).toBeUndefined();
     });
-    
+
     test('Should reject registration with weak password', async () => {
       const userData = {
         email: 'weak@example.com',
-        password: 'weak',
+        password: WEAK_PASSWORD,
         name: 'Weak User'
       };
-      
+
       const response = await agent
         .post('/api/auth/register')
         .send(userData);
-      
+
       expect(response.status).toBe(400);
       expect(response.body.errors).toBeDefined();
       expect(response.body.errors[0]).toContain('Password must be between 8 and 128 characters');
     });
-    
+
     test('Should reject registration with invalid email', async () => {
       const userData = {
-        email: 'invalid-email',
-        password: 'StrongP@ssw0rd123!',
+        email: INVALID_EMAIL,
+        password: STRONG_PASSWORD,
         name: 'Test User'
       };
-      
+
       const response = await agent
         .post('/api/auth/register')
         .send(userData);
-      
+
       expect(response.status).toBe(400);
       expect(response.body.errors).toContain('Invalid email format');
     });
-    
+
     test('Should reject duplicate email registration', async () => {
       const userData = {
         email: 'duplicate@example.com',
-        password: 'StrongP@ssw0rd123!',
+        password: STRONG_PASSWORD,
         name: 'First User'
       };
-      
+
       await agent.post('/api/auth/register').send(userData);
-      
+
       const response = await agent
         .post('/api/auth/register')
         .send(userData);
-      
+
       expect(response.status).toBe(409);
       expect(response.body.error).toBe('User already exists');
     });
   });
-  
+
   describe('User Login', () => {
     beforeEach(async () => {
-      // Create test user
       testUser = await User.create({
         email: 'login@example.com',
-        password: 'StrongP@ssw0rd123!',
+        password: STRONG_PASSWORD,
         name: 'Login Test User'
       });
     });
-    
+
     test('Should login with valid credentials', async () => {
       const response = await agent
         .post('/api/auth/login')
         .send({
           email: 'login@example.com',
-          password: 'StrongP@ssw0rd123!'
+          password: STRONG_PASSWORD
         });
-      
+
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.user.email).toBe('login@example.com');
       expect(response.headers['set-cookie']).toBeDefined();
     });
-    
+
     test('Should reject login with invalid password', async () => {
       const response = await agent
         .post('/api/auth/login')
@@ -110,11 +113,11 @@ describe('Authentication Tests', () => {
           email: 'login@example.com',
           password: 'WrongPassword123!'
         });
-      
+
       expect(response.status).toBe(401);
       expect(response.body.error).toBe('Invalid credentials');
     });
-    
+
     test('Should reject login with non-existent email', async () => {
       const response = await agent
         .post('/api/auth/login')
@@ -122,13 +125,12 @@ describe('Authentication Tests', () => {
           email: 'nonexistent@example.com',
           password: 'SomePassword123!'
         });
-      
+
       expect(response.status).toBe(401);
       expect(response.body.error).toBe('Invalid credentials');
     });
-    
+
     test('Should track failed login attempts', async () => {
-      // Make 4 failed attempts
       for (let i = 0; i < 4; i++) {
         await agent
           .post('/api/auth/login')
@@ -137,16 +139,19 @@ describe('Authentication Tests', () => {
             password: 'WrongPassword123!'
           });
       }
-      
-      // 5th failed attempt
+
       const response = await agent
         .post('/api/auth/login')
         .send({
           email: 'login@example.com',
           password: 'WrongPassword123!'
         });
-      
+
       expect(response.status).toBe(401);
+    });
+  });
+});
+
       
       // Check if account is locked
       const user = await User.findOne({ email: 'login@example.com' });

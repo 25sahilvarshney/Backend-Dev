@@ -1,28 +1,38 @@
+const MAX_PRICE_VALUE = 1000000;
+const MAX_STOCK_VALUE = 1000000;
+const MAX_SEARCH_LENGTH = 100;
+const MAX_PAGE_LIMIT = 100;
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 20;
+const MIN_RATING = 1;
+const MAX_RATING = 5;
+const MIN_REVIEW_TITLE_LENGTH = 3;
+const MAX_REVIEW_TITLE_LENGTH = 100;
+const MIN_REVIEW_COMMENT_LENGTH = 10;
+const MAX_REVIEW_COMMENT_LENGTH = 2000;
+
 class ValidationUtils {
-  // Validate product price
   static validatePrice(price) {
     const numPrice = parseFloat(price);
     if (isNaN(numPrice)) return false;
     if (numPrice < 0) return false;
-    if (numPrice > 1000000) return false; // Max $1M
+    if (numPrice > MAX_PRICE_VALUE) return false;
     return true;
   }
-  
-  // Validate product quantity/stock
+
   static validateStock(stock) {
     const numStock = parseInt(stock);
     if (isNaN(numStock)) return false;
     if (numStock < 0) return false;
-    if (numStock > 1000000) return false;
+    if (numStock > MAX_STOCK_VALUE) return false;
     return true;
   }
-  
-  // Validate search query
+
   static validateSearchQuery(query) {
     if (!query) return true;
-    if (query.length > 100) return false;
-    // Block common injection patterns
-    const dangerousPatterns = [
+    if (query.length > MAX_SEARCH_LENGTH) return false;
+
+    const sqlInjectionPatterns = [
       /\$\w+/,
       /[\{\[].*[\}\]]/,
       /drop\s+table/i,
@@ -30,33 +40,30 @@ class ValidationUtils {
       /insert\s+into/i,
       /update\s+set/i
     ];
-    
-    for (const pattern of dangerousPatterns) {
+
+    for (const pattern of sqlInjectionPatterns) {
       if (pattern.test(query)) {
         return false;
       }
     }
-    
+
     return true;
   }
-  
-  // Validate rating
+
   static validateRating(rating) {
     const numRating = parseInt(rating);
-    return !isNaN(numRating) && numRating >= 1 && numRating <= 5;
+    return !isNaN(numRating) && numRating >= MIN_RATING && numRating <= MAX_RATING;
   }
-  
-  // Validate review content
+
   static validateReviewContent(title, comment) {
     if (!title || !comment) return false;
-    if (title.length < 3 || title.length > 100) return false;
-    if (comment.length < 10 || comment.length > 2000) return false;
+    if (title.length < MIN_REVIEW_TITLE_LENGTH || title.length > MAX_REVIEW_TITLE_LENGTH) return false;
+    if (comment.length < MIN_REVIEW_COMMENT_LENGTH || comment.length > MAX_REVIEW_COMMENT_LENGTH) return false;
     return true;
   }
-  
-  // Check for suspicious content
+
   static isSuspiciousContent(content) {
-    const suspiciousPatterns = [
+    const xssPatterns = [
       /<script/i,
       /javascript:/i,
       /on\w+\s*=/i,
@@ -66,86 +73,76 @@ class ValidationUtils {
       /@import/i,
       /vbscript:/i
     ];
-    
-    for (const pattern of suspiciousPatterns) {
+
+    for (const pattern of xssPatterns) {
       if (pattern.test(content)) {
         return true;
       }
     }
-    
+
     return false;
   }
-  
-  // Validate pagination parameters
+
   static validatePagination(page, limit) {
-    const validPage = Math.max(1, parseInt(page) || 1);
-    const validLimit = Math.min(100, Math.max(1, parseInt(limit) || 20));
+    const validPage = Math.max(DEFAULT_PAGE, parseInt(page) || DEFAULT_PAGE);
+    const validLimit = Math.min(MAX_PAGE_LIMIT, Math.max(DEFAULT_PAGE, parseInt(limit) || DEFAULT_LIMIT));
     return { page: validPage, limit: validLimit };
   }
-  
-  // Validate sort field
+
   static validateSortField(sort, allowedFields) {
     if (!sort) return '-createdAt';
-    
-    // Check if sort field is allowed
+
     const sortField = sort.startsWith('-') ? sort.substring(1) : sort;
     if (!allowedFields.includes(sortField)) {
       return '-createdAt';
     }
-    
+
     return sort;
   }
-  
-  // Check if string contains HTML tags
+
   static containsHtmlTags(str) {
     return /<[^>]*>/g.test(str);
   }
-  
-  // Sanitize and validate JSON
+
   static validateAndSanitizeJson(obj, schema) {
     const errors = [];
     const sanitized = {};
-    
+
     for (const [field, rules] of Object.entries(schema)) {
       const value = obj[field];
-      
-      // Check required
+
       if (rules.required && (value === undefined || value === null)) {
         errors.push(`${field} is required`);
         continue;
       }
-      
+
       if (value !== undefined && value !== null) {
-        // Type check
         if (rules.type && typeof value !== rules.type) {
           errors.push(`${field} must be of type ${rules.type}`);
           continue;
         }
-        
-        // Min length
+
         if (rules.minLength && value.length < rules.minLength) {
           errors.push(`${field} must be at least ${rules.minLength} characters`);
           continue;
         }
-        
-        // Max length
+
         if (rules.maxLength && value.length > rules.maxLength) {
           errors.push(`${field} must not exceed ${rules.maxLength} characters`);
           continue;
         }
-        
-        // Pattern match
+
         if (rules.pattern && !rules.pattern.test(value)) {
           errors.push(`${field} has invalid format`);
           continue;
         }
-        
+
         sanitized[field] = value;
       } else if (rules.default !== undefined) {
         sanitized[field] = rules.default;
       }
     }
-    
+
     return { isValid: errors.length === 0, errors, sanitized };
   }
 }

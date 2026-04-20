@@ -1,6 +1,20 @@
 const mongoose = require('mongoose');
 const xss = require('xss');
 
+const SAFE_HTML_FOR_REVIEW = {
+  b: [],
+  i: [],
+  em: [],
+  strong: [],
+  p: [],
+  br: []
+};
+
+const MIN_REVIEW_RATING = 1;
+const MAX_REVIEW_RATING = 5;
+const MAX_REVIEW_TITLE_LENGTH = 100;
+const MAX_REVIEW_COMMENT_LENGTH = 2000;
+
 const reviewSchema = new mongoose.Schema({
   productId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -16,16 +30,15 @@ const reviewSchema = new mongoose.Schema({
   rating: {
     type: Number,
     required: true,
-    min: 1,
-    max: 5
+    min: MIN_REVIEW_RATING,
+    max: MAX_REVIEW_RATING
   },
   title: {
     type: String,
     required: true,
     trim: true,
-    maxlength: 100,
+    maxlength: MAX_REVIEW_TITLE_LENGTH,
     set: function(value) {
-      // Sanitize title against XSS
       return xss(value.trim(), {
         stripIgnoreTag: true,
         whiteList: {}
@@ -36,18 +49,10 @@ const reviewSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    maxlength: 2000,
+    maxlength: MAX_REVIEW_COMMENT_LENGTH,
     set: function(value) {
-      // Sanitize comment against XSS while allowing basic formatting
       return xss(value.trim(), {
-        whiteList: {
-          b: [],
-          i: [],
-          em: [],
-          strong: [],
-          p: [],
-          br: []
-        },
+        whiteList: SAFE_HTML_FOR_REVIEW,
         stripIgnoreTag: true,
         stripIgnoreTagBody: ['script', 'style', 'iframe']
       });
@@ -86,49 +91,43 @@ const reviewSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
 reviewSchema.index({ productId: 1, createdAt: -1 });
 reviewSchema.index({ userId: 1 });
 reviewSchema.index({ rating: 1 });
 reviewSchema.index({ status: 1 });
 
-// Ensure one review per user per product
 reviewSchema.index({ productId: 1, userId: 1 }, { unique: true });
 
-// Pre-save middleware
+const SUSPICIOUS_XSS_PATTERNS = [
+  /<script/i,
+  /javascript:/i,
+  /onload=/i,
+  /onerror=/i,
+  /onclick=/i
+];
+
 reviewSchema.pre('save', function(next) {
-  // Additional validation for suspicious content
-  const suspiciousPatterns = [
-    /<script/i,
-    /javascript:/i,
-    /onload=/i,
-    /onerror=/i,
-    /onclick=/i
-  ];
-  
-  for (const pattern of suspiciousPatterns) {
+  for (const pattern of SUSPICIOUS_XSS_PATTERNS) {
     if (pattern.test(this.comment) || pattern.test(this.title)) {
       this.status = 'flagged';
       break;
     }
   }
-  
+
   next();
 });
 
-// Static method for safe review creation
 reviewSchema.statics.createSafeReview = async function(reviewData) {
   const review = new this(reviewData);
-  
-  // Additional server-side validation
-  if (review.rating < 1 || review.rating > 5) {
+
+  if (review.rating < MIN_REVIEW_RATING || review.rating > MAX_REVIEW_RATING) {
     throw new Error('Invalid rating');
   }
-  
+
   if (review.comment.length < 10) {
     throw new Error('Review comment too short');
   }
-  
+
   return await review.save();
 };
 

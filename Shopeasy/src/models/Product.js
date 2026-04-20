@@ -1,11 +1,15 @@
 const mongoose = require('mongoose');
 
+const MAX_PRODUCT_NAME_LENGTH = 200;
+const MAX_PRODUCT_DESCRIPTION_LENGTH = 5000;
+const MAX_PRODUCT_STOCK = 1000000;
+
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
     trim: true,
-    maxlength: 200
+    maxlength: MAX_PRODUCT_NAME_LENGTH
   },
   price: {
     type: Number,
@@ -21,7 +25,7 @@ const productSchema = new mongoose.Schema({
   description: {
     type: String,
     trim: true,
-    maxlength: 5000
+    maxlength: MAX_PRODUCT_DESCRIPTION_LENGTH
   },
   category: {
     type: String,
@@ -59,13 +63,11 @@ const productSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for search
 productSchema.index({ name: 'text', description: 'text', tags: 'text' });
 productSchema.index({ price: 1 });
 productSchema.index({ category: 1 });
 productSchema.index({ createdAt: -1 });
 
-// Pre-save middleware to ensure price is non-negative
 productSchema.pre('save', function(next) {
   if (this.price < 0) {
     next(new Error('Price cannot be negative'));
@@ -73,32 +75,29 @@ productSchema.pre('save', function(next) {
   next();
 });
 
-// Static method for safe search
 productSchema.statics.safeSearch = async function(query, options = {}) {
   const { limit = 20, skip = 0, sort = '-createdAt', minPrice, maxPrice } = options;
-  
-  // Build search filter
+
   const filter = { isActive: true };
-  
+
   if (query && query.trim()) {
     filter.$text = { $search: query };
   }
-  
+
   if (minPrice !== undefined || maxPrice !== undefined) {
     filter.price = {};
     if (minPrice !== undefined) filter.price.$gte = minPrice;
     if (maxPrice !== undefined) filter.price.$lte = maxPrice;
   }
-  
-  // Execute search with parameterized query
+
   const products = await this.find(filter)
     .limit(limit)
     .skip(skip)
     .sort(sort)
-    .lean(); // Convert to plain JS object
-  
+    .lean();
+
   const total = await this.countDocuments(filter);
-  
+
   return { products, total };
 };
 

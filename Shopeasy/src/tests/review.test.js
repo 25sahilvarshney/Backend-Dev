@@ -5,6 +5,30 @@ const Review = require('../models/Review');
 const Product = require('../models/Product');
 const User = require('../models/User');
 
+const REVIEWER_CREDENTIALS = {
+  email: 'reviewer@test.com',
+  password: 'ReviewP@ss123!',
+  name: 'Review Tester'
+};
+
+const ADMIN_CREDENTIALS = {
+  email: 'admin@review.com',
+  password: 'AdminP@ss123!',
+  name: 'Review Admin'
+};
+
+const VALID_REVIEW = {
+  rating: 5,
+  title: 'Excellent Product!',
+  comment: 'This product exceeded my expectations. Highly recommended!'
+};
+
+const MALICIOUS_REVIEW = {
+  rating: 3,
+  title: '<script>alert("XSS")</script>Product Title',
+  comment: 'Great product! <img src=x onerror=alert("XSS")>'
+};
+
 describe('Review Tests', () => {
   let userAgent;
   let adminAgent;
@@ -12,49 +36,38 @@ describe('Review Tests', () => {
   let adminSessionCookie;
   let testProduct;
   let testUser;
-  
+
   beforeAll(async () => {
-    // Create test user
-    testUser = await User.create({
-      email: 'reviewer@test.com',
-      password: 'ReviewP@ss123!',
-      name: 'Review Tester'
-    });
-    
-    // Create admin user
+    testUser = await User.create(REVIEWER_CREDENTIALS);
+
     const adminUser = await User.create({
-      email: 'admin@review.com',
-      password: 'AdminP@ss123!',
-      name: 'Review Admin',
+      ...ADMIN_CREDENTIALS,
       role: 'admin'
     });
-    
-    // Login user
+
     const userLogin = await request(app)
       .post('/api/auth/login')
       .send({
-        email: 'reviewer@test.com',
-        password: 'ReviewP@ss123!'
+        email: REVIEWER_CREDENTIALS.email,
+        password: REVIEWER_CREDENTIALS.password
       });
     userSessionCookie = userLogin.headers['set-cookie'];
-    
-    // Login admin
+
     const adminLogin = await request(app)
       .post('/api/auth/login')
       .send({
-        email: 'admin@review.com',
-        password: 'AdminP@ss123!'
+        email: ADMIN_CREDENTIALS.email,
+        password: ADMIN_CREDENTIALS.password
       });
     adminSessionCookie = adminLogin.headers['set-cookie'];
-    
+
     userAgent = request.agent(app);
     adminAgent = request.agent(app);
   });
-  
+
   beforeEach(async () => {
     await Review.deleteMany({});
-    
-    // Create test product
+
     testProduct = await Product.create({
       name: 'Review Test Product',
       price: 199.99,
@@ -63,45 +76,41 @@ describe('Review Tests', () => {
       isActive: true
     });
   });
-  
+
   describe('Submit Review', () => {
     test('Should submit review with valid data', async () => {
       const reviewData = {
         productId: testProduct._id,
-        rating: 5,
-        title: 'Excellent Product!',
-        comment: 'This product exceeded my expectations. Highly recommended!'
+        ...VALID_REVIEW
       };
-      
+
       const response = await userAgent
         .post('/api/reviews')
         .set('Cookie', userSessionCookie)
         .send(reviewData);
-      
+
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.rating).toBe(5);
-      expect(response.body.data.title).toBe('Excellent Product!');
+      expect(response.body.data.rating).toBe(VALID_REVIEW.rating);
+      expect(response.body.data.title).toBe(VALID_REVIEW.title);
     });
-    
+
     test('Should prevent XSS in review', async () => {
-      const maliciousReview = {
+      const maliciousReviewData = {
         productId: testProduct._id,
-        rating: 3,
-        title: '<script>alert("XSS")</script>Product Title',
-        comment: 'Great product! <img src=x onerror=alert("XSS")>'
+        ...MALICIOUS_REVIEW
       };
-      
+
       const response = await userAgent
         .post('/api/reviews')
         .set('Cookie', userSessionCookie)
-        .send(maliciousReview);
-      
+        .send(maliciousReviewData);
+
       expect(response.status).toBe(201);
       expect(response.body.data.title).not.toContain('<script>');
       expect(response.body.data.comment).not.toContain('onerror');
     });
-    
+
     test('Should prevent duplicate reviews', async () => {
       const reviewData = {
         productId: testProduct._id,
@@ -109,26 +118,24 @@ describe('Review Tests', () => {
         title: 'Great Product',
         comment: 'Really good product!'
       };
-      
-      // Submit first review
+
       await userAgent
         .post('/api/reviews')
         .set('Cookie', userSessionCookie)
         .send(reviewData);
-      
-      // Submit duplicate
+
       const response = await userAgent
         .post('/api/reviews')
         .set('Cookie', userSessionCookie)
         .send(reviewData);
-      
+
       expect(response.status).toBe(400);
       expect(response.body.error).toContain('already reviewed');
     });
-    
+
     test('Should validate rating range', async () => {
       const invalidRatings = [0, 6, 10, -1];
-      
+
       for (const rating of invalidRatings) {
         const response = await userAgent
           .post('/api/reviews')
@@ -139,15 +146,30 @@ describe('Review Tests', () => {
             title: 'Test Review',
             comment: 'This is a test comment'
           });
-        
+
         expect(response.status).toBe(400);
         expect(response.body.error).toContain('Rating must be between 1 and 5');
       }
     });
-    
+
     test('Should validate review length', async () => {
       const shortReview = {
         productId: testProduct._id,
+        rating: 4,
+        title: 'Test',
+        comment: 'Short'
+      };
+
+      const response = await userAgent
+        .post('/api/reviews')
+        .set('Cookie', userSessionCookie)
+        .send(shortReview);
+
+      expect(response.status).toBe(400);
+    });
+  });
+});
+
         rating: 4,
         title: 'Hi',
         comment: 'Too short'

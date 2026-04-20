@@ -2,6 +2,13 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');
 
+const NAME_MIN_LENGTH = 2;
+const NAME_MAX_LENGTH = 50;
+const PASSWORD_MIN_LENGTH = 8;
+const MAX_LOGIN_ATTEMPTS = 5;
+const ACCOUNT_LOCK_DURATION = 30 * 60 * 1000;
+const USER_ROLES = ['user', 'admin', 'moderator'];
+
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
@@ -14,19 +21,19 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: true,
-    minlength: 8,
-    select: false // Don't return password by default
+    minlength: PASSWORD_MIN_LENGTH,
+    select: false
   },
   name: {
     type: String,
     required: true,
     trim: true,
-    minlength: 2,
-    maxlength: 50
+    minlength: NAME_MIN_LENGTH,
+    maxlength: NAME_MAX_LENGTH
   },
   role: {
     type: String,
-    enum: ['user', 'admin', 'moderator'],
+    enum: USER_ROLES,
     default: 'user'
   },
   loginAttempts: {
@@ -65,19 +72,16 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for performance
 userSchema.index({ email: 1 });
 userSchema.index({ role: 1 });
 
-// Virtual for isLocked
 userSchema.virtual('isLocked').get(function() {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
-// Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  
+
   try {
     const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_ROUNDS) || 12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -87,27 +91,21 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Increment login attempts
 userSchema.methods.incrementLoginAttempts = async function() {
-  const MAX_ATTEMPTS = 5;
-  const LOCK_TIME = 30 * 60 * 1000; // 30 minutes
-
   this.loginAttempts += 1;
-  
-  if (this.loginAttempts >= MAX_ATTEMPTS) {
-    this.lockUntil = new Date(Date.now() + LOCK_TIME);
+
+  if (this.loginAttempts >= MAX_LOGIN_ATTEMPTS) {
+    this.lockUntil = new Date(Date.now() + ACCOUNT_LOCK_DURATION);
     this.loginAttempts = 0;
   }
-  
+
   await this.save();
 };
 
-// Reset login attempts
 userSchema.methods.resetLoginAttempts = async function() {
   this.loginAttempts = 0;
   this.lockUntil = undefined;
